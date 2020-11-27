@@ -117,6 +117,10 @@ export default defineComponent({
 			type: Boolean,
 			default: false,
 		},
+		folder: {
+			type: String,
+			default: null,
+		},
 	},
 	setup(props, { emit }) {
 		const { uploading, progress, upload, onBrowseSelect, done, numberOfFiles } = useUpload();
@@ -155,6 +159,12 @@ export default defineComponent({
 				uploading.value = true;
 				progress.value = 0;
 
+				const customPresets: any = {};
+
+				if (props.folder) {
+					customPresets.folder = props.folder;
+				}
+
 				try {
 					numberOfFiles.value = files.length;
 
@@ -166,7 +176,10 @@ export default defineComponent({
 								);
 								done.value = percentage.filter((p) => p === 100).length;
 							},
-							preset: props.preset,
+							preset: {
+								...props.preset,
+								...customPresets,
+							},
 						});
 
 						uploadedFiles && emit('input', uploadedFiles);
@@ -177,7 +190,10 @@ export default defineComponent({
 								done.value = percentage === 100 ? 1 : 0;
 							},
 							fileId: props.fileId,
-							preset: props.preset,
+							preset: {
+								...props.preset,
+								...customPresets,
+							},
 						});
 
 						uploadedFile && emit('input', uploadedFile);
@@ -270,6 +286,9 @@ export default defineComponent({
 				try {
 					const response = await api.post(`/files/import`, {
 						url: url.value,
+						data: {
+							folder: props.folder,
+						},
 					});
 
 					emit('input', response.data.data);

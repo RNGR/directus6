@@ -75,6 +75,7 @@ export default defineComponent({
 	},
 	setup(props, { emit }) {
 		return {
+			fieldType: props.type,
 			fieldData: state.fieldData,
 		};
 	},

@@ -24,6 +24,16 @@ export class FilesService extends ItemsService {
 	) {
 		const payload = clone(data);
 
+		if (!payload.folder) {
+			const { storage_default_folder } = (await this.knex
+				.select('storage_default_folder')
+				.from('directus_settings')
+				.first()) || { storage_default_folder: null };
+			if (storage_default_folder) {
+				payload.folder = storage_default_folder;
+			}
+		}
+
 		if (primaryKey !== undefined) {
 			// If the file you're uploading already exists, we'll consider this upload a replace. In that case, we'll
 			// delete the previously saved file and thumbnails to ensure they're generated fresh

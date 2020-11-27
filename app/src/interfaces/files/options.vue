@@ -12,6 +12,11 @@
 				allowNone
 			/>
 		</div>
+		<div class="field full">
+			<p class="type-label">{{ $t('interfaces.folder.folder') }}</p>
+			<folder :folder="folderValue" default-label="system" />
+			<small class="note" v-html="$t('interfaces.folder.field_hint')" />
+		</div>
 	</div>
 </template>
 
@@ -21,7 +26,9 @@ import { defineComponent, PropType, computed } from '@vue/composition-api';
 import { useRelationsStore } from '@/stores/';
 import { Relation, Collection } from '@/types';
 import { useCollectionsStore } from '../../stores';
+import Folder from '@/interfaces/_system/folder/folder.vue';
 export default defineComponent({
+	components: { Folder },
 	props: {
 		collection: {
 			type: String,
@@ -64,6 +71,18 @@ export default defineComponent({
 			},
 		});
 
+		const folderValue = computed({
+			get() {
+				return props.value?.folder;
+			},
+			set(folder: string) {
+				emit('input', {
+					...(props.value || {}),
+					folder,
+				});
+			},
+		});
+
 		const junctionCollection = computed(() => {
 			if (!props.fieldData || !props.relations || props.relations.length === 0) return null;
 			const { field } = props.fieldData;
@@ -79,7 +98,7 @@ export default defineComponent({
 			);
 		});
 
-		return { sortField, junctionCollection, junctionCollectionExists };
+		return { sortField, junctionCollection, junctionCollectionExists, folderValue };
 	},
 });
 </script>
@@ -88,5 +107,11 @@ export default defineComponent({
 @import '@/styles/mixins/form-grid';
 .form-grid {
 	@include form-grid;
+}
+.note {
+	display: block;
+	margin-top: 4px;
+	color: var(--foreground-subdued);
+	font-style: italic;
 }
 </style>
