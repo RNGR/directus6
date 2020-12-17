@@ -21,6 +21,7 @@ follow our [Contributing Guide](/getting-started/contributing).
 
 ## One-Click Install Guides
 
+- [Cloudron](/guides/installation/cloudron)
 - [Platform.sh](/guides/installation/platformsh-one-click)
 
 <!--
