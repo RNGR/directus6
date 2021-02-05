@@ -20,6 +20,7 @@ To work on the project's source code, please follow our [Contributing Guide](/ge
 
 ## One-Click Install Guides
 
+- [Cloudron](/guides/installation/cloudron)
 - [Platform.sh](/guides/installation/platformsh-one-click)
 
 <!--

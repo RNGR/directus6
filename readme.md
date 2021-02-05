@@ -85,6 +85,7 @@ Directus only requires Node.js and supports most operating systems and SQL datab
 - macOS Catalina or newer
 - Windows 10
 - Docker ([DockerHub](https://hub.docker.com/r/directus/directus) + [Docker Repo](https://github.com/directus/docker))
+- Cloudron ([Package Source](https://git.cloudron.io/cloudron/directus-app)  + [Cloudron Store link](https://www.cloudron.io/store/io.directus.cloudronapp.html))
 
 _Other operating systems may also work, but are not officially supported._
 
