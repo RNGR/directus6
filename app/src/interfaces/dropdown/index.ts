@@ -7,7 +7,7 @@ export default defineInterface(({ i18n }) => ({
 	description: i18n.t('interfaces.dropdown.description'),
 	icon: 'arrow_drop_down_circle',
 	component: InterfaceDropdown,
-	types: ['string'],
+	types: ['string', 'integer', 'decimal', 'float', 'bigInteger', 'dateTime', 'date', 'time', 'timestamp'],
 	options: [
 		{
 			field: 'choices',
@@ -34,7 +34,7 @@ export default defineInterface(({ i18n }) => ({
 						},
 						{
 							field: 'value',
-							type: 'string',
+							type: 'string', // this is default, can be different in config based on the datatype
 							name: i18n.t('value'),
 							meta: {
 								interface: 'text-input',
