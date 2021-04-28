@@ -16,8 +16,9 @@
 			<v-form
 				v-else-if="Array.isArray(selectedInterface.options)"
 				:fields="selectedInterface.options"
+				:initial-values="interfaceInitialValues"
 				primary-key="+"
-				v-model="fieldData.meta.options"
+				v-model="interfaceEdits"
 			/>
 
 			<component
@@ -111,13 +112,26 @@ export default defineComponent({
 			return recommendedItems;
 		});
 
-		const selectedInterface = computed(() => {
-			return interfaces.value.find((inter) => inter.id === state.fieldData.meta.interface);
-		});
+		const {
+			fieldData,
+			selectedInterface,
+			interfaceEdits,
+			interfaceInitialValues,
+			relations,
+			newCollections,
+			newFields,
+		} = toRefs(state);
 
-		const { fieldData, relations, newCollections, newFields } = toRefs(state);
-
-		return { fieldData, relations, selectItems, selectedInterface, newCollections, newFields };
+		return {
+			fieldData,
+			interfaceEdits,
+			interfaceInitialValues,
+			relations,
+			selectItems,
+			selectedInterface,
+			newCollections,
+			newFields,
+		};
 	},
 });
 </script>
