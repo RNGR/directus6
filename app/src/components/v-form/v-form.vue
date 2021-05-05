@@ -1,39 +1,49 @@
 <template>
-	<div class="v-form" ref="el" :class="gridClass">
-		<v-notice type="danger" v-if="unknownValidationErrors.length > 0" class="full">
-			<div>
-				<p>{{ $t('unknown_validation_errors') }}</p>
-				<ul>
-					<li v-for="(validationError, index) of unknownValidationErrors" :key="index">
-						<strong v-if="validationError.field">{{ validationError.field }}:</strong>
-						<template v-if="validationError.code === 'RECORD_NOT_UNIQUE'">
-							{{ $t('validationError.unique', validationError) }}
-						</template>
-						<template v-else>
-							{{ $t(`validationError.${validationError.code}`, validationError) }}
-						</template>
-					</li>
-				</ul>
-			</div>
-		</v-notice>
+	<div class="v-form" :class="{ tabbed: tabEnabled }">
+		<v-tabs class="tabs full" v-model="currentTab" v-if="tabEnabled" horizontal>
+			<v-tab value="-1" v-if="tabUnassigned">Unassigned</v-tab>
+			<v-tab v-for="tab in tabFields" :key="tab.meta.id" :value="tab.meta.id.toString()">
+				<v-icon v-if="tab.meta.options.icon" :name="tab.meta.options.icon" small />
+				{{ $t(tab.name) }}
+			</v-tab>
+		</v-tabs>
 
-		<form-field
-			v-for="(field, index) in formFields"
-			:field="field"
-			:autofocus="index === firstEditableFieldIndex && autofocus"
-			:key="field.field"
-			:value="(edits || {})[field.field]"
-			:initial-value="(initialValues || {})[field.field]"
-			:disabled="disabled"
-			:batch-mode="batchMode"
-			:batch-active="batchActiveFields.includes(field.field)"
-			:primary-key="primaryKey"
-			:loading="loading"
-			:validation-error="validationErrors.find((err) => err.field === field.field)"
-			@input="setValue(field, $event)"
-			@unset="unsetValue(field)"
-			@toggle-batch="toggleBatchField(field)"
-		/>
+		<div class="form" :class="gridClass" ref="el">
+			<v-notice type="danger" v-if="unknownValidationErrors.length > 0" class="full">
+				<div>
+					<p>{{ $t('unknown_validation_errors') }}</p>
+					<ul>
+						<li v-for="(validationError, index) of unknownValidationErrors" :key="index">
+							<strong v-if="validationError.field">{{ validationError.field }}:</strong>
+							<template v-if="validationError.code === 'RECORD_NOT_UNIQUE'">
+								{{ $t('validationError.unique', validationError) }}
+							</template>
+							<template v-else>
+								{{ $t(`validationError.${validationError.code}`, validationError) }}
+							</template>
+						</li>
+					</ul>
+				</div>
+			</v-notice>
+
+			<form-field
+				v-for="(field, index) in filteredFields"
+				:field="field"
+				:autofocus="index === firstEditableFieldIndex && autofocus"
+				:key="field.field"
+				:value="(edits || {})[field.field]"
+				:initial-value="(initialValues || {})[field.field]"
+				:disabled="disabled"
+				:batch-mode="batchMode"
+				:batch-active="batchActiveFields.includes(field.field)"
+				:primary-key="primaryKey"
+				:loading="loading"
+				:validation-error="validationErrors.find((err) => err.field === field.field)"
+				@input="setValue(field, $event)"
+				@unset="unsetValue(field)"
+				@toggle-batch="toggleBatchField(field)"
+			/>
+		</div>
 	</div>
 </template>
 
@@ -109,7 +119,7 @@ export default defineComponent({
 			return Object.assign({}, props.initialValues, props.edits);
 		});
 
-		const { formFields, gridClass } = useForm();
+		const { formFields, filteredFields, tabFields, tabEnabled, tabUnassigned, currentTab, gridClass } = useForm();
 		const { toggleBatchField, batchActiveFields } = useBatch();
 
 		const firstEditableFieldIndex = computed(() => {
@@ -136,6 +146,11 @@ export default defineComponent({
 		return {
 			el,
 			formFields,
+			filteredFields,
+			tabFields,
+			tabEnabled,
+			tabUnassigned,
+			currentTab,
 			gridClass,
 			values,
 			setValue,
@@ -180,6 +195,29 @@ export default defineComponent({
 				);
 			});
 
+			const tabFields = computed(() => {
+				return formFieldsParsed.value.filter((field: Field) => field.meta?.interface == 'tab');
+			});
+
+			const tabEnabled = computed<boolean>(() => {
+				return tabFields.value.length > 0;
+			});
+
+			const tabUnassigned = computed<boolean>(() => {
+				return formFieldsParsed.value.filter((field: Field) => field.meta?.group == -1).length > 0;
+			});
+
+			const currentTab = ref(['-1']);
+			if (tabEnabled.value == true && tabUnassigned.value == false && tabFields.value[0])
+				currentTab.value = [tabFields.value[0].meta.id.toString()];
+
+			const filteredFields = computed(() => {
+				return formFieldsParsed.value.filter(
+					(field: Field) =>
+						field.meta?.interface != 'tab' && field.meta?.group == parseInt(currentTab.value[0] || '-1', 10)
+				);
+			});
+
 			const { width } = useElementSize(el);
 
 			const gridClass = computed<string | null>(() => {
@@ -192,7 +230,16 @@ export default defineComponent({
 				}
 			});
 
-			return { formFields: formFieldsParsed, gridClass, isDisabled };
+			return {
+				formFields: formFieldsParsed,
+				filteredFields,
+				tabFields,
+				tabEnabled,
+				tabUnassigned,
+				currentTab,
+				gridClass,
+				isDisabled,
+			};
 
 			function isDisabled(field: Field) {
 				return (
@@ -241,7 +288,40 @@ export default defineComponent({
 <style lang="scss" scoped>
 @import '@/styles/mixins/form-grid';
 
-.v-form {
+.v-form .form {
 	@include form-grid;
+}
+
+.v-form.tabbed {
+	padding-top: 0;
+
+	::v-deep .v-tabs.horizontal {
+		position: sticky;
+		top: 55px;
+		z-index: 3;
+		width: 100%;
+		margin-top: -80px;
+		margin-bottom: 20px;
+		padding-top: 20px;
+		padding-bottom: 20px;
+		background-color: var(--background-page);
+
+		.v-tab {
+			flex-grow: 0;
+			padding-right: 40px;
+			padding-left: 0;
+			font-weight: 600;
+			font-size: medium;
+			white-space: nowrap;
+
+			&.active {
+				color: var(--primary);
+			}
+
+			.v-icon {
+				margin-right: 5px;
+			}
+		}
+	}
 }
 </style>
