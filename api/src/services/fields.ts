@@ -12,15 +12,14 @@ import { translateDatabaseError } from '../exceptions/database/translate';
 import { ItemsService } from '../services/items';
 import { PayloadService } from '../services/payload';
 import { AbstractServiceOptions, Accountability, FieldMeta, SchemaOverview, types } from '../types';
-import { Field } from '../types/field';
+import { Field, RawField } from '../types/field';
 import getDefaultValue from '../utils/get-default-value';
 import getLocalType from '../utils/get-local-type';
 import { toArray } from '../utils/to-array';
 import { isEqual } from 'lodash';
 import { RelationsService } from './relations';
+import { getGeometryHelper } from '../database/helpers/geometry';
 import Keyv from 'keyv';
-
-export type RawField = DeepPartial<Field> & { field: string; type: typeof types[number] };
 
 export class FieldsService {
 	knex: Knex;
@@ -75,26 +74,21 @@ export class FieldsService {
 			fields.push(...systemFieldRows);
 		}
 
-		let columns = await this.schemaInspector.columnInfo(collection);
-
-		columns = columns.map((column) => {
-			return {
-				...column,
-				default_value: getDefaultValue(column),
-			};
-		});
+		const columns = await this.schemaInspector.columnInfo(collection);
 
 		const columnsWithSystem = columns.map((column) => {
 			const field = fields.find((field) => {
 				return field.field === column.name && field.collection === column.table;
 			});
 
+			const { type = 'alias', ...info } = column ? getLocalType(column, field) : {};
 			const data = {
 				collection: column.table,
 				field: column.name,
-				type: column ? getLocalType(column, field) : 'alias',
-				schema: column,
+				type: type,
+				schema: { ...column, ...info },
 				meta: field || null,
+				default_value: getDefaultValue(column),
 			};
 
 			return data as Field;
@@ -200,12 +194,13 @@ export class FieldsService {
 			// Do nothing
 		}
 
+		const { type = 'alias', ...info } = column ? getLocalType(column, fieldInfo) : {};
 		const data = {
 			collection,
 			field,
-			type: column ? getLocalType(column, fieldInfo) : 'alias',
+			type,
 			meta: fieldInfo || null,
-			schema: column || null,
+			schema: type == 'alias' ? null : { ...column, ...info },
 		};
 
 		return data;
@@ -445,6 +440,9 @@ export class FieldsService {
 			column = table.string(field.field);
 		} else if (field.type === 'hash') {
 			column = table.string(field.field, 255);
+		} else if (field.type === 'geometry') {
+			const helper = getGeometryHelper();
+			column = helper.createColumn(table, field);
 		} else {
 			column = table[field.type](field.field);
 		}

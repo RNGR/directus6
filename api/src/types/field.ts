@@ -17,7 +17,9 @@ export const types = [
 	'uuid',
 	'hash',
 	'csv',
+	'geometry',
 ] as const;
+export type DataType = typeof types[number];
 
 export type FieldMeta = {
 	id: number;
@@ -38,7 +40,9 @@ export type FieldMeta = {
 export type Field = {
 	collection: string;
 	field: string;
-	type: typeof types[number];
-	schema: Column | null;
+	type: DataType;
+	schema: (Column & { geometry_type?: string }) | null;
 	meta: FieldMeta | null;
 };
+
+export type RawField = DeepPartial<Field> & { field: string; type: typeof types[number] };

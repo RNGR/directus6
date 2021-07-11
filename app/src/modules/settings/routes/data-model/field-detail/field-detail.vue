@@ -134,7 +134,7 @@ import useCollection from '@/composables/use-collection';
 import { getLocalTypeForField } from '../get-local-type';
 import { notify } from '@/utils/notify';
 import formatTitle from '@directus/format-title';
-import { localTypes } from '@/types';
+import { LocalType } from '@/types';
 
 import { initLocalStore, state, clearLocalStore } from './store';
 import { unexpectedError } from '@/utils/unexpected-error';
@@ -160,7 +160,7 @@ export default defineComponent({
 			required: true,
 		},
 		type: {
-			type: String as PropType<typeof localTypes[number]>,
+			type: String as PropType<LocalType>,
 			default: null,
 		},
 	},
@@ -192,8 +192,8 @@ export default defineComponent({
 		const localType = computed(() => {
 			if (props.field === '+') return props.type;
 
-			let type: typeof localTypes[number];
-			type = getLocalTypeForField(props.collection, props.field);
+			let type: LocalType;
+			type = getLocalTypeForField(props.collection, props.field)!;
 
 			return type;
 		});

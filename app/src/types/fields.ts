@@ -8,6 +8,19 @@ type Translations = {
 
 export type Width = 'half' | 'half-left' | 'half-right' | 'full' | 'fill';
 
+export const geometryTypes = [
+	'Point',
+	'LineString',
+	'Polygon',
+	'MultiPoint',
+	'MultiLineString',
+	'MultiPolygon',
+] as const;
+export type GeometryType = typeof geometryTypes[number] | 'GeometryCollection' | undefined;
+
+export const geometryFormats = ['native', 'geojson', 'wkt', 'lnglat'] as const;
+export type GeometryFormat = typeof geometryFormats[number];
+
 export const types = [
 	'alias',
 	'bigInteger',
@@ -26,8 +39,10 @@ export const types = [
 	'uuid',
 	'hash',
 	'csv',
+	'geometry',
 	'unknown',
 ] as const;
+export type DataType = typeof types[number];
 
 export const localTypes = [
 	'standard',
@@ -41,6 +56,7 @@ export const localTypes = [
 	'translations',
 	'group',
 ] as const;
+export type LocalType = typeof localTypes[number];
 
 export type FieldMeta = {
 	id: number;
@@ -64,8 +80,8 @@ export type FieldMeta = {
 export interface FieldRaw {
 	collection: string;
 	field: string;
-	type: typeof types[number];
-	schema: Column | null;
+	type: DataType;
+	schema: (Column & { geometry_type: GeometryType }) | null;
 	meta: FieldMeta | null;
 }
 
