@@ -27,6 +27,7 @@ export const types = [
 	'hash',
 	'csv',
 	'unknown',
+	'translations',
 ] as const;
 
 export const localTypes = [

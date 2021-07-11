@@ -63,7 +63,8 @@
 		"supertest": "6.1.3",
 		"tedious": "11.0.9",
 		"ts-jest": "27.0.3",
-		"ts-node": "10.0.0"
+		"ts-node": "^10.0.0",
+		"xliff": "^5.5.2"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "npx lint-staged"

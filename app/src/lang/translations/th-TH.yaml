@@ -144,6 +144,8 @@ float: เลขทศนิยม
 integer: จำนวนเต็ม
 json: JSON
 xml: XML
+xliff: XLIFF 1.2
+xliff2: XLIFF 2.0
 string: ข้อความแบบสั้น
 text: ข้อความแบบยาว
 time: เวลา

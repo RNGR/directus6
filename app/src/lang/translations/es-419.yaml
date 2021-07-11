@@ -143,6 +143,8 @@ float: Flotante
 integer: Número Entero
 json: JSON
 xml: XML
+xliff: XLIFF 1.2
+xliff2: XLIFF 2.0
 string: Cadena de Texto
 text: Texto
 time: Hora

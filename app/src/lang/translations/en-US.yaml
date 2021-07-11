@@ -153,6 +153,8 @@ decimal: Decimal
 float: Float
 integer: Integer
 json: JSON
+xliff: XLIFF 1.2
+xliff2: XLIFF 2.0
 xml: XML
 string: String
 text: Text
@@ -247,9 +249,17 @@ related_collections: Related Collections
 translations_collection: Translation Collection
 languages_collection: Languages Collection
 export_data: Export Data
+import_data: Import Data
 format: Format
 use_current_filters_settings: Use Current Filters & Settings
 export_collection: 'Export {collection}'
+import_collection: 'Import {collection}'
+use_language_from_file: Use Language from File
+target_language: Target Language
+import_successfull: No items were imported | Successfully imported one item | Successfully imported {amount} items
+import_failed: Import failed
+target_translation_field: Target Translation Field
+translation_field: Translation Field
 last_page: Last Page
 last_access: Last Access
 fill_template: Fill with Template Value

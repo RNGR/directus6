@@ -1,13 +1,14 @@
 import { RequestHandler } from 'express';
-import { Transform, transforms } from 'json2csv';
-import ms from 'ms';
-import { PassThrough } from 'stream';
-import { getCache } from '../cache';
-import env from '../env';
 import asyncHandler from '../utils/async-handler';
+import env from '../env';
 import { getCacheKey } from '../utils/get-cache-key';
+import { getCache } from '../cache';
+import { Transform, transforms } from 'json2csv';
+import { PassThrough } from 'stream';
+import ms from 'ms';
 import { parse as toXML } from 'js2xmlparser';
 import { getCacheControlHeader } from '../utils/get-cache-headers';
+import { XliffService } from '../services';
 
 export const respond: RequestHandler = asyncHandler(async (req, res) => {
 	const { cache } = getCache();
@@ -68,6 +69,23 @@ export const respond: RequestHandler = asyncHandler(async (req, res) => {
 				});
 				return stream.pipe(json2csv).pipe(res);
 			}
+		}
+		if (['xliff', 'xliff2'].includes(req.sanitizedQuery.export)) {
+			res.attachment(`${filename}.xlf`);
+			res.set('Content-Type', 'text/xml');
+			const xliffService = new XliffService({
+				language: req.sanitizedQuery.optional?.language,
+				format: req.sanitizedQuery.export,
+				accountability: req.accountability,
+				schema: req.schema,
+			});
+			const output = await xliffService.toXliff(
+				req.collection,
+				req.sanitizedQuery.optional?.parentKeyField,
+				req.sanitizedQuery.optional?.languageField,
+				res.locals.payload?.data
+			);
+			return res.status(200).send(output);
 		}
 	}
 

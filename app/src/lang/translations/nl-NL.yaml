@@ -143,6 +143,8 @@ float: Float
 integer: Integer
 json: JSON
 xml: XML
+xliff: XLIFF 1.2
+xliff2: XLIFF 2.0
 string: String
 text: Tekst
 time: Tijd

@@ -143,6 +143,8 @@ decimal: Dezimal
 float: Float
 integer: Integer
 json: JSON
+xliff: XLIFF 1.2
+xliff2: XLIFF 2.0
 xml: XML
 string: Zeichenkette
 text: Text

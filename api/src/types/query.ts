@@ -9,8 +9,9 @@ export type Query = {
 	page?: number;
 	meta?: Meta[];
 	search?: string;
-	export?: 'json' | 'csv' | 'xml';
+	export?: 'json' | 'csv' | 'xml' | 'xliff' | 'xliff2';
 	deep?: Record<string, Query>;
+	optional?: Record<string, any>;
 };
 
 export type Sort = {

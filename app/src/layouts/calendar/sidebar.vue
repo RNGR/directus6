@@ -5,6 +5,7 @@
 		:search-query="props.searchQuery"
 		:collection="props.collection"
 	/>
+	<import-sidebar-detail :collection="props.collection" v-on:refresh="refresh" />
 </template>
 
 <script lang="ts">
@@ -17,7 +18,11 @@ export default defineComponent({
 		const layoutState = useLayoutState();
 		const { props, loading, filtersWithCalendarView } = toRefs(layoutState.value);
 
-		return { props, loading, filtersWithCalendarView };
+		return { refresh, props, loading, filtersWithCalendarView };
+
+		function refresh() {
+			layoutState.value.refresh();
+		}
 	},
 });
 </script>

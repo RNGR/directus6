@@ -6,6 +6,7 @@
 		:search-query="props.searchQuery"
 		:collection="props.collection"
 	/>
+	<import-sidebar-detail :collection="props.collection" v-on:refresh="refresh" />
 </template>
 
 <script lang="ts">
@@ -18,7 +19,11 @@ export default defineComponent({
 		const layoutState = useLayoutState();
 		const { props, loading } = toRefs(layoutState.value);
 
-		return { props, loading };
+		return { refresh, props, loading };
+
+		function refresh() {
+			layoutState.value.refresh();
+		}
 	},
 });
 </script>
