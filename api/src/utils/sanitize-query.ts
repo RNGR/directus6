@@ -1,6 +1,6 @@
 import { flatten, get, merge, set } from 'lodash';
 import logger from '../logger';
-import { Accountability, Filter, Meta, Query, Sort } from '../types';
+import { Accountability, Aggregate, Filter, Meta, Query, Sort } from '../types';
 import { parseFilter } from '../utils/parse-filter';
 
 export function sanitizeQuery(rawQuery: Record<string, any>, accountability?: Accountability | null): Query {
@@ -16,6 +16,14 @@ export function sanitizeQuery(rawQuery: Record<string, any>, accountability?: Ac
 
 	if (rawQuery.fields) {
 		query.fields = sanitizeFields(rawQuery.fields);
+	}
+
+	if (rawQuery.group) {
+		query.group = sanitizeFields(rawQuery.group);
+	}
+
+	if (rawQuery.aggregate) {
+		query.aggregate = sanitizeAggregate(rawQuery.aggregate);
 	}
 
 	if (rawQuery.sort) {
@@ -82,6 +90,25 @@ function sanitizeSort(rawSort: any) {
 		const column = field.startsWith('-') ? field.substring(1) : field;
 		return { column, order } as Sort;
 	});
+}
+
+function sanitizeAggregate(rawAggregate: any): Aggregate {
+	let aggregate: Aggregate = {};
+
+	if (typeof rawAggregate === 'string') {
+		try {
+			aggregate = JSON.parse(rawAggregate);
+		} catch {
+			logger.warn('Invalid value passed for filter query parameter.');
+		}
+	}
+
+	for (const [operation, fields] of Object.entries(rawAggregate)) {
+		if (typeof fields === 'string') aggregate[operation as keyof Aggregate] = fields.split(',');
+		else if (Array.isArray(fields)) aggregate[operation as keyof Aggregate] = fields as string[];
+	}
+
+	return aggregate as Aggregate;
 }
 
 function sanitizeFilter(rawFilter: any, accountability: Accountability | null) {
