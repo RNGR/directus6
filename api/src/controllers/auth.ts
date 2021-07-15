@@ -8,8 +8,9 @@ import { InvalidCredentialsException, RouteNotFoundException, ServiceUnavailable
 import { InvalidPayloadException } from '../exceptions/invalid-payload';
 import grantConfig from '../grant';
 import { respond } from '../middleware/respond';
-import { AuthenticationService, UsersService } from '../services';
+import { BasicAuthenticationService, UsersService } from '../services';
 import asyncHandler from '../utils/async-handler';
+import getAuthService from '../utils/get-auth-service';
 import getEmailFromProfile from '../utils/get-email-from-profile';
 import { toArray } from '../utils/to-array';
 
@@ -22,6 +23,57 @@ const loginSchema = Joi.object({
 	otp: Joi.string(),
 }).unknown();
 
+const ldapSchema = Joi.object({
+	userCN: Joi.string().required(),
+	password: Joi.string().required(),
+	mode: Joi.string().valid('cookie', 'json'),
+	otp: Joi.string(),
+}).unknown();
+
+const authHandler = (accountability: any, schema: any) => async (req: any, res: any, next: any) => {
+	const { error } = schema.validate(req.body);
+
+	if (error) {
+		throw new InvalidPayloadException(error.message);
+	}
+
+	const authService = new (getAuthService(accountability))({
+		accountability: accountability,
+		schema: req.schema,
+	});
+
+	const mode = req.body.mode || 'json';
+	const ip = req.ip;
+	const userAgent = req.get('user-agent');
+
+	const { accessToken, refreshToken, expires } = await authService.authenticate({
+		...req.body,
+		ip,
+		userAgent,
+	});
+
+	const payload = {
+		data: { access_token: accessToken, expires },
+	} as Record<string, Record<string, any>>;
+
+	if (mode === 'json') {
+		payload.data.refresh_token = refreshToken;
+	}
+
+	if (mode === 'cookie') {
+		res.cookie('directus_refresh_token', refreshToken, {
+			httpOnly: true,
+			domain: env.REFRESH_TOKEN_COOKIE_DOMAIN,
+			maxAge: ms(env.REFRESH_TOKEN_TTL as string),
+			secure: env.REFRESH_TOKEN_COOKIE_SECURE ?? false,
+			sameSite: (env.REFRESH_TOKEN_COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'strict',
+		});
+	}
+
+	res.locals.payload = payload;
+	return next();
+};
+
 router.post(
 	'/login',
 	asyncHandler(async (req, res, next) => {
@@ -31,45 +83,22 @@ router.post(
 			role: null,
 		};
 
-		const authenticationService = new AuthenticationService({
-			accountability: accountability,
-			schema: req.schema,
-		});
+		return authHandler(accountability, loginSchema)(req, res, next);
+	}),
+	respond
+);
 
-		const { error } = loginSchema.validate(req.body);
-		if (error) throw new InvalidPayloadException(error.message);
+router.post(
+	'/login/ldap',
+	asyncHandler(async (req, res, next) => {
+		const accountability = {
+			ip: req.ip,
+			userAgent: req.get('user-agent'),
+			role: null,
+			ldap: true,
+		};
 
-		const mode = req.body.mode || 'json';
-
-		const ip = req.ip;
-		const userAgent = req.get('user-agent');
-
-		const { accessToken, refreshToken, expires } = await authenticationService.authenticate({
-			...req.body,
-			ip,
-			userAgent,
-		});
-
-		const payload = {
-			data: { access_token: accessToken, expires },
-		} as Record<string, Record<string, any>>;
-
-		if (mode === 'json') {
-			payload.data.refresh_token = refreshToken;
-		}
-
-		if (mode === 'cookie') {
-			res.cookie('directus_refresh_token', refreshToken, {
-				httpOnly: true,
-				domain: env.REFRESH_TOKEN_COOKIE_DOMAIN,
-				maxAge: ms(env.REFRESH_TOKEN_TTL as string),
-				secure: env.REFRESH_TOKEN_COOKIE_SECURE ?? false,
-				sameSite: (env.REFRESH_TOKEN_COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'strict',
-			});
-		}
-
-		res.locals.payload = payload;
-		return next();
+		return authHandler(accountability, ldapSchema)(req, res, next);
 	}),
 	respond
 );
@@ -83,7 +112,7 @@ router.post(
 			role: null,
 		};
 
-		const authenticationService = new AuthenticationService({
+		const authenticationService = new (getAuthService(accountability))({
 			accountability: accountability,
 			schema: req.schema,
 		});
@@ -131,7 +160,7 @@ router.post(
 			role: null,
 		};
 
-		const authenticationService = new AuthenticationService({
+		const authenticationService = new (getAuthService(accountability))({
 			accountability: accountability,
 			schema: req.schema,
 		});
@@ -277,7 +306,7 @@ router.get(
 			role: null,
 		};
 
-		const authenticationService = new AuthenticationService({
+		const authenticationService = new BasicAuthenticationService({
 			accountability: accountability,
 			schema: req.schema,
 		});

@@ -4,9 +4,10 @@ import { ForbiddenException, InvalidCredentialsException, InvalidPayloadExceptio
 import { respond } from '../middleware/respond';
 import useCollection from '../middleware/use-collection';
 import { validateBatch } from '../middleware/validate-batch';
-import { AuthenticationService, MetaService, UsersService } from '../services';
+import { MetaService, UsersService } from '../services';
 import { PrimaryKey } from '../types';
 import asyncHandler from '../utils/async-handler';
+import getAuthService from '../utils/get-auth-service';
 
 const router = express.Router();
 
@@ -306,17 +307,17 @@ router.post(
 			throw new InvalidPayloadException(`"password" is required`);
 		}
 
+		const authService = new (getAuthService(req.accountability))({
+			accountability: req.accountability,
+			schema: req.schema,
+		});
+
+		await authService.verifyPassword(req.accountability.user, req.body.password);
+
 		const service = new UsersService({
 			accountability: req.accountability,
 			schema: req.schema,
 		});
-
-		const authService = new AuthenticationService({
-			accountability: req.accountability,
-			schema: req.schema,
-		});
-		await authService.verifyPassword(req.accountability.user, req.body.password);
-
 		const { url, secret } = await service.generateTFA(req.accountability.user);
 
 		res.locals.payload = { data: { secret, otpauth_url: url } };
@@ -367,11 +368,10 @@ router.post(
 			accountability: req.accountability,
 			schema: req.schema,
 		});
-		const authService = new AuthenticationService({
+		const authService = new (getAuthService(req.accountability))({
 			accountability: req.accountability,
 			schema: req.schema,
 		});
-
 		const otpValid = await authService.verifyOTP(req.accountability.user, req.body.otp);
 
 		if (otpValid === false) {

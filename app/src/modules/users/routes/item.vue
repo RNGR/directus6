@@ -102,7 +102,7 @@
 			<div class="user-box" v-if="isNew === false">
 				<div class="avatar">
 					<v-skeleton-loader v-if="loading || previewLoading" />
-					<img v-else-if="avatarSrc" :src="avatarSrc" :alt="item.email" />
+					<img v-else-if="avatarSrc" :src="avatarSrc" :alt="Avatar" />
 					<v-icon v-else name="account_circle" outline x-large />
 				</div>
 				<div class="user-box-content">
@@ -116,7 +116,7 @@
 							{{ userName(item) }}
 							<span v-if="item.title" class="title">, {{ item.title }}</span>
 						</div>
-						<div class="email">
+						<div class="email" v-if="item.email">
 							<v-icon name="alternate_email" small outline />
 							{{ item.email }}
 						</div>
@@ -304,7 +304,13 @@ export default defineComponent({
 		];
 
 		const fieldsFiltered = computed(() => {
-			return fields.value.filter((field: Field) => fieldsDenyList.includes(field.field) === false);
+			return fields.value.filter((field: Field) => {
+				// Password shouldn't be editable for LDAP users
+				if (field.field === 'password' && item.value?.user_dn) {
+					field.meta.readonly = true;
+				}
+				return !fieldsDenyList.includes(field.field);
+			});
 		});
 
 		const { formFields } = useFormFields(fieldsFiltered);
