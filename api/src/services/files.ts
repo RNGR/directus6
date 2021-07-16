@@ -2,6 +2,8 @@ import formatTitle from '@directus/format-title';
 import axios, { AxiosResponse } from 'axios';
 import parseEXIF from 'exif-reader';
 import { parse as parseICC } from 'icc';
+import ffprobe from 'ffprobe';
+import ffprobeStatic from 'ffprobe-static';
 import { clone } from 'lodash';
 import { extension } from 'mime-types';
 import path from 'path';
@@ -109,6 +111,22 @@ export class FilesService extends ItemsService {
 					logger.warn(`Couldn't extract IPTC information from file`);
 					logger.warn(err);
 				}
+			}
+		}
+
+		if (['video/mpeg', 'audio/mpeg', 'audio/mp3', 'video/mp4', 'audio/ogg', 'video/ogg'].includes(payload.type)) {
+			const file = await storage.disk(data.storage).getSignedUrl(payload.filename_disk);
+			const probe = await ffprobe(file, { path: ffprobeStatic.path })
+			if (probe.streams.length > 0) {
+				payload.duration = probe.streams[0].duration * 1000;
+				for (let stream of probe.streams) {
+					if (stream.width && stream.height) {
+						payload.width = stream.width;
+						payload.height = stream.height;
+						break;
+					}
+				}
+
 			}
 		}
 
