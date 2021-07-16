@@ -2,9 +2,7 @@ import formatTitle from '@directus/format-title';
 import axios, { AxiosResponse } from 'axios';
 import parseEXIF from 'exif-reader';
 import { parse as parseICC } from 'icc';
-import ffprobe from 'ffprobe';
-import { file } from 'tmp-promise';
-import * as fs from 'fs/promises';
+import execa from 'execa';
 import { clone } from 'lodash';
 import { extension } from 'mime-types';
 import path from 'path';
@@ -116,12 +114,16 @@ export class FilesService extends ItemsService {
 		}
 
 		if (['video/mpeg', 'audio/mpeg', 'audio/mp3', 'video/mp4', 'audio/ogg', 'video/ogg'].includes(payload.type)) {
-			const ffprobeStatic = require('@ffprobe-installer/ffprobe');
-			const buffer = await storage.disk(data.storage).getBuffer(payload.filename_disk);
-			const { path, cleanup } = await file();
-			fs.appendFile(path, buffer.content);
-			const probe = await ffprobe(path, { path: ffprobeStatic.path });
-			cleanup();
+			const ffprobe = require('@ffprobe-installer/ffprobe');
+			const stream = await storage.disk(data.storage).getStream(payload.filename_disk);
+			const { stdout } = await execa(ffprobe.path, ['-show_streams', '-print_format', 'json', '-i', 'pipe:0'], {
+				reject: false,
+				// @ts-ignore
+				input: stream,
+			});
+
+			const probe = JSON.parse(stdout);
+
 			if (probe.streams.length > 0) {
 				if (probe.streams[0].duration) {
 					payload.duration = Math.round(probe.streams[0].duration * 1000);
