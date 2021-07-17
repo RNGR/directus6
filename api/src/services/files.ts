@@ -5,6 +5,8 @@ import { parse as parseICC } from 'icc';
 import ffprobe from 'ffprobe';
 import { file } from 'tmp-promise';
 import * as fs from 'fs';
+import stream from 'stream';
+import util from 'util';
 import { clone } from 'lodash';
 import { extension } from 'mime-types';
 import path from 'path';
@@ -19,6 +21,8 @@ import { AbstractServiceOptions, File, PrimaryKey } from '../types';
 import parseIPTC from '../utils/parse-iptc';
 import { toArray } from '../utils/to-array';
 import { ItemsService, MutationOptions } from './items';
+
+const pipeline = util.promisify(stream.pipeline);
 
 export class FilesService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
@@ -120,7 +124,7 @@ export class FilesService extends ItemsService {
 			const mediaStream = await storage.disk(data.storage).getStream(payload.filename_disk);
 			const { path, cleanup } = await file();
 			const tempFileWriteStream = fs.createWriteStream(path);
-			mediaStream.pipe(tempFileWriteStream);
+			await pipeline(mediaStream, tempFileWriteStream);
 			const probe = await ffprobe(path, { path: ffprobeStatic.path });
 			cleanup();
 			if (probe.streams.length > 0) {
