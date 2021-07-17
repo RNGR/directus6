@@ -98,6 +98,7 @@
 		"destroy": "^1.0.4",
 		"dotenv": "^10.0.0",
 		"eventemitter2": "^6.4.3",
+		"execa": "^5.1.1",
 		"exif-reader": "^1.0.3",
 		"express": "^4.17.1",
 		"express-session": "^1.17.2",
