@@ -2,6 +2,11 @@ import formatTitle from '@directus/format-title';
 import axios, { AxiosResponse } from 'axios';
 import parseEXIF from 'exif-reader';
 import { parse as parseICC } from 'icc';
+import ffprobe from 'ffprobe';
+import { file } from 'tmp-promise';
+import * as fs from 'fs';
+import stream from 'stream';
+import util from 'util';
 import { clone } from 'lodash';
 import { extension } from 'mime-types';
 import path from 'path';
@@ -16,6 +21,8 @@ import { AbstractServiceOptions, File, PrimaryKey } from '../types';
 import parseIPTC from '../utils/parse-iptc';
 import { toArray } from '../utils/to-array';
 import { ItemsService, MutationOptions } from './items';
+
+const pipeline = util.promisify(stream.pipeline);
 
 export class FilesService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
@@ -108,6 +115,28 @@ export class FilesService extends ItemsService {
 				} catch (err) {
 					logger.warn(`Couldn't extract IPTC information from file`);
 					logger.warn(err);
+				}
+			}
+		}
+
+		if (['video/mpeg', 'audio/mpeg', 'audio/mp3', 'video/mp4', 'audio/ogg', 'video/ogg'].includes(payload.type)) {
+			const ffprobeStatic = require('@ffprobe-installer/ffprobe');
+			const mediaStream = await storage.disk(data.storage).getStream(payload.filename_disk);
+			const { path, cleanup } = await file();
+			const tempFileWriteStream = fs.createWriteStream(path);
+			await pipeline(mediaStream, tempFileWriteStream);
+			const probe = await ffprobe(path, { path: ffprobeStatic.path });
+			cleanup();
+			if (probe.streams.length > 0) {
+				if (probe.streams[0].duration) {
+					payload.duration = Math.round(probe.streams[0].duration * 1000);
+				}
+				for (const stream of probe.streams) {
+					if (stream.width && stream.height) {
+						payload.width = stream.width;
+						payload.height = stream.height;
+						break;
+					}
 				}
 			}
 		}
