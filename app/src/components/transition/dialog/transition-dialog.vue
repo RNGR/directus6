@@ -1,7 +1,7 @@
 <template>
-	<transition-group name="dialog" tag="span" v-bind="$attrs">
+	<transition name="dialog">
 		<slot />
-	</transition-group>
+	</transition>
 </template>
 
 <style lang="scss">
@@ -9,31 +9,39 @@
 
 .dialog-enter-active,
 .dialog-leave-active {
-	transition: opacity var(--slow) var(--transition);
+	transition-duration: var(--medium);
+
+	.v-overlay {
+		opacity: 1;
+		transition: opacity var(--medium) var(--transition-in);
+	}
 
 	&.center > *:not(.v-overlay) {
 		transform: translateY(0px);
-		transition: transform var(--slow) var(--transition-in);
+		transition: transform var(--medium) var(--transition-in);
 	}
 
 	&.right > *:not(.v-overlay) {
 		transform: translateX(0px);
-		transition: transform var(--slow) var(--transition-in);
+		transition: transform var(--medium) var(--transition-in);
 	}
 }
 
 .dialog-enter-from,
 .dialog-leave-to {
-	opacity: 0;
+	.v-overlay {
+		opacity: 0;
+		transition: opacity var(--medium) var(--transition-out);
+	}
 
 	&.center > *:not(.v-overlay) {
 		transform: translateY(50px);
-		transition: transform var(--slow) var(--transition-out);
+		transition: transform var(--medium) var(--transition-out);
 	}
 
 	&.right > *:not(.v-overlay) {
-		transform: translateX(50px);
-		transition: transform var(--slow) var(--transition-out);
+		transform: translateX(var(--v-drawer-max-width));
+		transition: transform var(--medium) var(--transition-out);
 	}
 }
 </style>
