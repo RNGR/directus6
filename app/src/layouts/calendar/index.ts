@@ -13,7 +13,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { ref, watch, toRefs, computed, Ref } from 'vue';
 import { useAppStore } from '@/stores/app';
 import { Field } from '@/types';
-import { Item, Filter } from '@directus/shared/types';
+import { Item, Filter, LogicalOperatorFilter } from '@directus/shared/types';
 import useItems from '@/composables/use-items';
 import useCollection from '@/composables/use-collection';
 import { formatISO } from 'date-fns';
@@ -62,24 +62,75 @@ export default defineLayout<LayoutOptions>({
 			})
 		);
 
-		const filtersWithCalendarView = computed<Filter[]>(() => {
-			if (!calendar.value || !startDateField.value) return filters.value;
+		const filtersWithCalendarView = computed<(Filter | LogicalOperatorFilter)[]>(() => {
+			if (!calendar.value || !startDateField.value || !endDateField.value) return filters.value;
 
 			return [
 				...filters.value,
 				{
-					key: 'start_date',
-					field: startDateField.value,
-					operator: 'gte',
-					value: formatISO(calendar.value.view.currentStart),
-					hidden: true,
-				},
-				{
-					key: 'end_date',
-					field: startDateField.value,
-					operator: 'lte',
-					value: formatISO(calendar.value.view.currentEnd),
-					hidden: true,
+					operator: 'or',
+					filters: [
+						{
+							// event starts in the current month
+							operator: 'and',
+							filters: [
+								{
+									key: 'start_date',
+									field: startDateField.value,
+									operator: 'gte',
+									value: formatISO(calendar.value.view.currentStart),
+									hidden: true,
+								},
+								{
+									key: 'end_date',
+									field: startDateField.value,
+									operator: 'lte',
+									value: formatISO(calendar.value.view.currentEnd),
+									hidden: true,
+								},
+							],
+						},
+						{
+							// end of event is in the current month
+							operator: 'and',
+							filters: [
+								{
+									key: 'start_date',
+									field: endDateField.value,
+									operator: 'gte',
+									value: formatISO(calendar.value.view.currentStart),
+									hidden: true,
+								},
+								{
+									key: 'end_date',
+									field: endDateField.value,
+									operator: 'lte',
+									value: formatISO(calendar.value.view.currentEnd),
+									hidden: true,
+								},
+							],
+						},
+						{
+							// event starts before the month and ends after the month
+							operator: 'and',
+							filters: [
+								{
+									key: 'start_date',
+									field: startDateField.value,
+									operator: 'lt',
+									value: formatISO(calendar.value.view.currentStart),
+									hidden: true,
+								},
+								{
+									key: 'end_date',
+									field: endDateField.value,
+									operator: 'gt',
+									value: formatISO(calendar.value.view.currentEnd),
+									hidden: true,
+								},
+							],
+						},
+					],
 				},
 			];
 		});
