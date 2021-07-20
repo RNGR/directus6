@@ -5,6 +5,8 @@ import env from '../env';
 import logger from '../logger';
 import { getConfigFromEnv } from '../utils/get-config-from-env';
 import { validateEnv } from '../utils/validate-env';
+import { Migration } from './migrations/run';
+import fse from 'fs-extra';
 
 let database: Knex | null = null;
 let inspector: ReturnType<typeof SchemaInspector> | null = null;
@@ -127,3 +129,17 @@ export async function isInstalled(): Promise<boolean> {
 	// exists when using the installer CLI.
 	return await inspector.hasTable('directus_collections');
 }
+
+export async function validateMigrations() {
+	const database = getDatabase();
+	try {
+		const completedMigrations = await database.select<Migration[]>('*').from('directus_migrations').orderBy('version');
+		const completedMigrationFiles = completedMigrations.map((migration) => {
+			return `${migration.version}-${migration.name.toLowerCase()}.ts`.replace(/ /g, '-');
+		});
+		const migrationFiles = await fse.readdir('./migrations');
+		return completedMigrationFiles.every((migration) => migrationFiles.includes(migration));
+	} catch (error) {
+		return error;
+	}
+};
