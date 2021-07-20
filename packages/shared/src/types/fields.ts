@@ -1,5 +1,6 @@
 import { Column } from 'knex-schema-inspector/dist/types/column';
-import { FilterOperator } from '@directus/shared/types';
+import { FilterOperator } from './presets';
+import { types } from '../constants/field-types';
 
 type Translations = {
 	language: string;
@@ -7,40 +8,6 @@ type Translations = {
 };
 
 export type Width = 'half' | 'half-left' | 'half-right' | 'full' | 'fill';
-
-export const types = [
-	'alias',
-	'bigInteger',
-	'boolean',
-	'date',
-	'dateTime',
-	'decimal',
-	'float',
-	'integer',
-	'json',
-	'string',
-	'text',
-	'time',
-	'timestamp',
-	'binary',
-	'uuid',
-	'hash',
-	'csv',
-	'unknown',
-] as const;
-
-export const localTypes = [
-	'standard',
-	'file',
-	'files',
-	'm2o',
-	'o2m',
-	'm2m',
-	'm2a',
-	'presentation',
-	'translations',
-	'group',
-] as const;
 
 export type FieldMeta = {
 	id: number;
@@ -58,6 +25,7 @@ export type FieldMeta = {
 	translations: null | Translations[];
 	width: Width | null;
 	note: string | null;
+	conditions: Condition[] | null;
 	system?: true;
 };
 
@@ -81,4 +49,13 @@ export type ValidationError = {
 	valid?: number | string | (number | string)[];
 	invalid?: number | string | (number | string)[];
 	substring?: string;
+};
+
+export type Condition = {
+	name: string;
+	rule: Record<string, any>;
+
+	readonly?: boolean;
+	hidden?: boolean;
+	options?: Record<string, any>;
 };

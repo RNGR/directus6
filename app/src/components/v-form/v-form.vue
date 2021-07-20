@@ -21,6 +21,7 @@
 			<component
 				:is="`interface-${field.meta?.interface || 'group-raw'}`"
 				v-if="field.meta?.special?.includes('group')"
+				v-show="!field.meta?.hidden"
 				:key="field.field"
 				:class="field.meta?.width || 'full'"
 				:field="field"
@@ -39,6 +40,7 @@
 
 			<form-field
 				v-else
+				v-show="!field.meta?.hidden"
 				:key="field.field"
 				:field="field"
 				:autofocus="index === firstEditableFieldIndex && autofocus"
@@ -68,6 +70,7 @@ import useFormFields from '@/composables/use-form-fields';
 import { ValidationError } from '@/types';
 import { useElementSize } from '@/composables/use-element-size';
 import FormField from './form-field.vue';
+import generateJoi from '@/utils/generate-joi';
 
 type FieldValues = {
 	[field: string]: any;
@@ -202,16 +205,10 @@ export default defineComponent({
 				throw new Error('[v-form]: You need to pass either the collection or fields prop.');
 			});
 
-			const fieldsInGroup = computed(() =>
-				fields.value.filter(
-					(field) => field.meta?.group === props.group || (props.group === null && isNil(field.meta?.group))
-				)
-			);
+			const fieldsParsed = computed(() => {
+				if (props.group !== null) return fields.value;
 
-			const { formFields } = useFormFields(fieldsInGroup);
-
-			const formFieldsParsed = computed(() => {
-				const blockPrimaryKey = (field: Field) => {
+				const setPrimaryKeyReadonly = (field: Field) => {
 					if (
 						field.schema?.has_auto_increment === true ||
 						(field.schema?.is_primary_key === true && props.primaryKey !== '+')
@@ -225,10 +222,45 @@ export default defineComponent({
 					return field;
 				};
 
-				return formFields.value.map((field) => blockPrimaryKey(field));
+				const applyConditions = (field: Field) => {
+					if (field.meta && Array.isArray(field.meta?.conditions)) {
+						const conditions = [...field.meta.conditions].reverse();
+
+						const matchingCondition = conditions.find((condition) => {
+							const schema = generateJoi(condition.rule, { requireAll: true });
+							const { error } = schema.validate(values.value);
+							return isNil(error);
+						});
+
+						if (matchingCondition) {
+							return {
+								...field,
+								meta: merge({}, field.meta || {}, {
+									readonly: matchingCondition.readonly,
+									options: matchingCondition.options,
+									hidden: matchingCondition.hidden,
+								}),
+							};
+						}
+
+						return field;
+					} else {
+						return field;
+					}
+				};
+
+				return fields.value.map((field) => setPrimaryKeyReadonly(field)).map((field) => applyConditions(field));
 			});
 
-			return { formFields: formFieldsParsed, isDisabled, getFieldsForGroup };
+			const fieldsInGroup = computed(() =>
+				fieldsParsed.value.filter(
+					(field) => field.meta?.group === props.group || (props.group === null && isNil(field.meta?.group))
+				)
+			);
+
+			const { formFields } = useFormFields(fieldsInGroup);
+
+			return { formFields, isDisabled, getFieldsForGroup };
 
 			function isDisabled(field: Field) {
 				return (
@@ -240,7 +272,7 @@ export default defineComponent({
 			}
 
 			function getFieldsForGroup(group: null | number): Field[] {
-				const fieldsInGroup: Field[] = fields.value.filter(
+				const fieldsInGroup: Field[] = fieldsParsed.value.filter(
 					(field) => field.meta?.group === group || (group === null && isNil(field.meta))
 				);
 
