@@ -35,7 +35,16 @@ function getConfig(
 	if (store === 'redis') {
 		const Redis = require('ioredis');
 		delete config.redis;
-		config.storeClient = new Redis(env.RATE_LIMITER_REDIS || getConfigFromEnv('RATE_LIMITER_REDIS_'));
+		if (env.RATE_LIMITER_REDIS_CLUSTER === true) {
+			config.storeClient = new Redis.Cluster(
+				env.RATE_LIMITER_REDIS || getConfigFromEnv('RATE_LIMITER_REDIS_', 'RATE_LIMITER_REDIS_CLUSTER'),
+				{
+					dnsLookup: (address: any, callback: (arg0: null, arg1: any) => any) => callback(null, address),
+				}
+			);
+		} else {
+			config.storeClient = new Redis(env.RATE_LIMITER_REDIS || getConfigFromEnv('RATE_LIMITER_REDIS_'));
+		}
 	}
 
 	if (store === 'memcache') {
